@@ -9,9 +9,8 @@
 
 #include "server/base/noncopyable.h"
 #include "server/base/StringPiece.h"
+#include "server/base/Types.h"
 #include <assert.h>
-#include <string.h> // memcpy
-#include <string>
 
 namespace myserver {
 
@@ -40,7 +39,7 @@ public:
 
     // 将日志消息复制到缓冲区里
     void append(const char* buf, size_t len) {
-        if(static_cast<size_t>(avail()) > len) {
+        if(implicit_cast<size_t>(avail()) > len) {
             memcpy(cur_, buf, len);
             cur_ += len;
         }
@@ -61,13 +60,13 @@ public:
     // 重设缓冲区
     void reset() { cur_ = data_; }
     // 缓冲区全设为0
-    void bzero() { memset(data_, 0, sizeof data_);}
+    void bzero() { memZero(data_, sizeof data_);}
 
     // 用于调式的
     const char* debugString();
     void setCookie(void (*cookie)()) { cookie_ = cookie; }
     // 用于单元测试的
-    std::string toString() const { return std::string(data_, length()); }
+    string toString() const { return string(data_, length()); }
     StringPiece toStringPiece() const { return StringPiece(data_, length()); }
 
 private:
@@ -85,6 +84,7 @@ private:
 /**
  * 没有使用标准库的iostream，而是自己写的LogStream类，主要是出于性能 见书11.6.6
  * LogStream类把输出保存在自己内部的缓冲区 也就是FixedBuffer
+ * LogStream不是线程安全的，正确的使用方法是每条log消息构造一个LogStream，用完就扔
  */
 class LogStream : noncopyable {
 public:
@@ -138,7 +138,7 @@ public:
     }
 
     // 标准字符串std::string输出到缓冲区
-    LogStream& operator<<(const std::string& v) {
+    LogStream& operator<<(const string& v) {
         buffer_.append(v.c_str(), v.size());
         return *this;
     }
@@ -172,5 +172,36 @@ private:
     
     static const int kMaxNumericSize = 48;  // 用作检查类型大小的变量
 };
+
+/**
+ * LogStream本身不支持格式化，定义一个简单的Fmt class就行，而且不影响stream的状态
+ */
+class Fmt {
+public:
+    template<typename T>
+    Fmt(const char* fmt, T val);
+
+    const char* data() const { return buf_; }
+    int length() const { return length_; }
+private:
+    char buf_[32];
+    int length_;
+};
+
+// 重载了支持Fmt输出到logstream的<<操作符函数
+inline LogStream& operator<<(LogStream& s, const Fmt& fmt) {
+    s.append(fmt.data(), fmt.length());
+    return s;
+}
+
+// Format quantity n in SI units (k, M, G, T, P, E).
+// The returned string is atmost 5 characters long.
+// Requires n >= 0
+string formatSI(int64_t n);
+
+// Format quantity n in IEC (binary) units (Ki, Mi, Gi, Ti, Pi, Ei).
+// The returned string is atmost 6 characters long.
+// Requires n >= 0
+string formatIEC(int64_t n);
 
 } // namespace myserver
