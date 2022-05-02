@@ -1,5 +1,5 @@
 set(base_SRCS
-    # Logging.cc
+    Logging.cc
     LogStream.cc
     Timestamp.cc
     )
