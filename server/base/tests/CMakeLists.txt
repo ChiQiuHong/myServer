@@ -1,3 +1,7 @@
+add_executable(fileutil_test FileUtil_test.cc)
+target_link_libraries(fileutil_test myserver_base)
+add_test(NAME fileutil_test COMMAND fileutil_test)
+
 add_executable(logging_test Logging_test.cc)
 target_link_libraries(logging_test myserver_base)
 
