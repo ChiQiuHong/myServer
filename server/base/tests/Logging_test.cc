@@ -6,6 +6,7 @@
 */
 
 #include "server/base/Logging.h"
+#include "server/base/LogFile.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -13,11 +14,15 @@
 
 int g_total;
 FILE* g_file;
+std::unique_ptr<myserver::LogFile> g_logFile;
 
 void dummyOutput(const char* msg, int len) {
     g_total += len;
     if(g_file) {
         fwrite(msg, 1, len, g_file);
+    }
+    else if (g_logFile) {
+        g_logFile->append(msg, len);
     }
 }
 
@@ -63,4 +68,8 @@ int main() {
     setbuffer(g_file, buffer, sizeof(buffer));
     bench("/myServer/log");
     fclose(g_file);
+
+    g_file = NULL;
+    g_logFile.reset(new myserver::LogFile("test_log_st", 500*1000*1000));
+    bench("test_log_st");
 }

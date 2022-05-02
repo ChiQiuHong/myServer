@@ -7,7 +7,7 @@
 
 #include "server/base/LogFile.h"
 
-#include "muduo/base/FileUtil.h"
+#include "server/base/FileUtil.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -15,27 +15,32 @@
 
 namespace myserver {
 
-LogFile::LogFile(const string& basename, // 日志 进程名称
-                 off_t rollSize, // 一次最大刷新字节数
-                 bool threadSafe, // 通过对写入操作加锁，来决定是否线程安全
-                 int flushInterval,  // 隔多少毫秒刷新一次
+// LogFile 构造函数
+LogFile::LogFile(const string& basename,
+                 off_t rollSize,
+                 bool threadSafe,
+                 int flushInterval,
                  int checkEveryN)
     : basename_(basename),
       rollSize_(rollSize),
       flushInterval_(flushInterval),
       checkEveryN_(checkEveryN),
       count_(0),
-    //   mutex_(threadSafe ? new MutexLock : NULL),
+    //   mutex_(threadSafe ? new MutexLock : NULL), // FIXME 暂不考虑线程安全
       startOfPeriod_(0),
       lastRoll_(0),
       lastFlush_(0)
 {
+    // 检查basename是否是最小路径单位
     assert(basename.find('/') == string::npos);
+    // 滚动初始化
     rollFile();
 }
 
+// 默认析构函数
 LogFile::~LogFile() = default;
 
+// 把日志消息写到缓冲区 具体实现是私有函数append_unlocked
 void LogFile::append(const char* logline, int len) {
     append_unlocked(logline, len);
 }
@@ -48,25 +53,28 @@ void LogFile::flush() {
 }
 
 /**
- * 把日志消息写到目的地
+ * 把日志消息写到缓冲区
  * 1) 定期（默认3秒）将缓冲区内的日志消息flush到硬盘
+ * 2）24小时滚动一次，不管文件写没写满
+ * 3）文件写满了触发滚动
  */
 void LogFile::append_unlocked(const char* logline, int len) {
     // 写入缓冲区
     file_->append(logline, len);
 
-    // 触发滚动条件1
+    // 触发滚动条件1：文件写满了
     if(file_->writtenBytes() > rollSize_) {
         rollFile();
     }
     else {
-        // 如果每次写入都查看是否满足下面条件，就太浪费性能了，所以设置count参数，每1024次才查看一次。
+        // 对于每秒写几十万条日志的高性能日志库，如果每次写入都查看是否满足下面条件
+        // 就太浪费性能了，所以设置count参数，每1024次才检查一次。
         ++count_;
         if(count_ >= checkEveryN_) {
             count_ = 0;
             time_t now = time(NULL);
             time_t thisPeriod_ = now / kRollPerSeconds_ * kRollPerSeconds_;
-            // 触发滚动条件2
+            // 触发滚动条件2：24小时滚动一次
             if(thisPeriod_ != startOfPeriod_) {
                 rollFile();
             }
@@ -97,14 +105,14 @@ bool LogFile::rollFile() {
         lastFlush_ = now;
         startOfPeriod_ = start; //记录上一次rollfile的日期（天）
         // 换一个文件写日志，即为了保证两天的日志不写在同一个文件中，而上一天的日志可能并未写到rollSize_大小 
-        // file_.reset(new FileUtil::Appendfile(filename));
+        file_.reset(new FileUtil::AppendFile(filename));
         return true;
     }
     return false;
 }
 
 /** 典型的日志文件的文件名如下：
- *  logfile_test.2021060-144022.hostname.3602.log 
+ *  logfile_test.20210603-144022.hostname.3602.log 
  * 进程名字 + 文件的创建时间 + 机器名称 + 进程id + 后缀名.log
  */
 string LogFile::getLogFileName(const string& basename, time_t* now) {
@@ -113,20 +121,19 @@ string LogFile::getLogFileName(const string& basename, time_t* now) {
     filename.reserve(basename.size() + 64); // 为容器预留足够的空间
     filename = basename;
 
-    // 始终使用GMT时区。见P112
     char timebuf[32];
-    struct tm utc_tm;
+    struct tm t_time;
     *now = time(NULL);
-    gmtime_r(now, &utc_tm); // gmtime_r 线程安全 获取当前时间结构，UTC时间，无时区转换
-    strftime(timebuf, sizeof timebuf, ".%Y%m%d-%H%M%S.", &utc_tm);
+    localtime_r(now, &t_time);
+    strftime(timebuf, sizeof timebuf, ".%Y%m%d-%H%M%S.", &t_time);
     filename += timebuf;
 
-    // filename += ProcessInfo::hostname();
-    filename += "hostname";
+    // filename += ProcessInfo::hostname(); 
+    filename += "hostname"; // FIXME
 
     char pidbuf[32];
     // snprintf(pidbuf, sizeof pidbuf, ".%d", ProcessInfo::pid());
-    snprintf(pidbuf, sizeof pidbuf, ".%d", 1234);
+    snprintf(pidbuf, sizeof pidbuf, ".%d", 1234);   // FIXME
     filename += pidbuf;
 
     filename += ".log";
