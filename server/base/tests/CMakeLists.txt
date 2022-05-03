@@ -15,6 +15,9 @@ add_executable(logstream_test LogStream_test.cc)
 target_link_libraries(logstream_test myserver_base boost_unit_test_framework)
 add_test(NAME logstream_test COMMAND logstream_test)
 
+add_executable(mutex_test Mutex_test.cc)
+target_link_libraries(mutex_test myserver_base)
+
 add_executable(thread_test Thread_test.cc)
 target_link_libraries(thread_test myserver_base)
 

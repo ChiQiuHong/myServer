@@ -1,5 +1,6 @@
 set(base_SRCS
     Condition.cc
+    CountDownLatch.cc
     CurrentThread.cc
     FileUtil.cc
     Logging.cc
