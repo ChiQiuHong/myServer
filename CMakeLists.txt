@@ -10,7 +10,7 @@ endif()
 
 # only build examples if this is the main project
 if(CMAKE_PROJECT_NAME STREQUAL "myserver")
-  option(myserver_BUILD_EXAMPLES "Build myserver examples" OFF)
+  option(MYSERVER_BUILD_EXAMPLES "Build myserver examples" ON)
 endif()
 
 set(CXX_FLAGS
@@ -51,8 +51,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 find_package(Boost REQUIRED)
-find_package(Protobuf)
-find_package(CURL)
+# find_package(Protobuf)
+# find_package(CURL)
 find_package(ZLIB)
 find_path(CARES_INCLUDE_DIR ares.h)
 find_library(CARES_LIBRARY NAMES cares)

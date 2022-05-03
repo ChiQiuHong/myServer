@@ -14,7 +14,7 @@
 
 namespace myserver {
 
-// detail封装具体实现细节
+// detail 具体实现细节
 namespace detail {
 
 const int kSmallBuffer = 4000;  // 4K
