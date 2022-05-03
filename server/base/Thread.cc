@@ -69,6 +69,7 @@ struct ThreadData {
         tid_ = NULL;
 
         CurrentThread::t_threadName = name_.empty() ? "myserverThread" : name_.c_str();
+        // 把参数arg2作为调用进程的经常名字
         prctl(PR_SET_NAME, CurrentThread::t_threadName);
         try {
             func_();
