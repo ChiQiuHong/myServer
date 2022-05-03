@@ -7,6 +7,7 @@
 
 #include "server/base/Logging.h"
 
+#include "server/base/CurrentThread.h"
 #include "server/base/Timestamp.h"
 
 #include <errno.h>
@@ -16,13 +17,13 @@
 namespace myserver {
 
 // 缓存错误信息
-char t_errnobuf[512];
+__thread char t_errnobuf[512];
 /**
  * 如果前后两次日志操作，都是在一秒钟内，那仅格式化微秒部分
  * 缓存时间和秒数
  */
-char t_time[64];        // 时间字符串 "Y:M:D H:M:S"
-time_t t_lastSecond;    // 当前线程上一次日志记录时的秒数
+__thread char t_time[64];        // 时间字符串 "Y:M:D H:M:S"
+__thread time_t t_lastSecond;    // 当前线程上一次日志记录时的秒数
 
 const char* strerror_tl(int savedErrno) {
     // 根据错误码得到对应的错误描述
@@ -52,7 +53,7 @@ Logger::LogLevel initLogLevel() {
 
 Logger::LogLevel g_logLevel = initLogLevel();
 
-// 帮助类 在编译时就知道字符串的长度
+// 帮助类 给定字符串长度 加快编译速度
 class T {
 public:
     T(const char* str, unsigned len)
@@ -100,6 +101,8 @@ Logger::Impl::Impl(LogLevel level, int savedErrno, const SourceFile& file, int l
       basename_(file)
 {
     formatTime();
+    CurrentThread::tid();
+    stream_ << T(CurrentThread::tidString(), CurrentThread::tidStringLength());
     stream_ << T(LogLevelName[level], 6);
     if(savedErrno != 0) {
         stream_ << strerror_tl(savedErrno) << " (errno=" << savedErrno << ") ";

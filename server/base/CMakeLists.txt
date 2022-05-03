@@ -1,4 +1,5 @@
 set(base_SRCS
+    CurrentThread.cc
     FileUtil.cc
     Logging.cc
     LogFile.cc

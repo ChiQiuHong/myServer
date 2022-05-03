@@ -6,6 +6,7 @@
 */
 
 #include "server/base/Thread.h"
+#include "server/base/CurrentThread.h"
 
 #include "server/base/Logging.h"
 
@@ -33,8 +34,14 @@ pid_t gettid() {
 // 线程名称初始化
 class ThreadNameInitializer {
 public:
-    ThreadNameInitializer();
+    ThreadNameInitializer() {
+        CurrentThread::t_threadName = "main";
+        CurrentThread::tid();
+        // pthread_arfork(NULL, NULL, &afterfork);
+    }
 };
+
+ThreadNameInitializer init;
 
 /**
  * 中间结构体ThreadDate 保存子线程的信息
@@ -58,9 +65,26 @@ struct ThreadData {
     // 线程实际执行的函数
     void runInThread() {
         // 执行用户传入的回调函数
-        *tid_ = gettid();
+        *tid_ = CurrentThread::tid();
         tid_ = NULL;
-        func_();
+
+        CurrentThread::t_threadName = name_.empty() ? "myserverThread" : name_.c_str();
+        prctl(PR_SET_NAME, CurrentThread::t_threadName);
+        try {
+            func_();
+            CurrentThread::t_threadName = "finished";
+        }
+        catch (const std::exception& ex) {
+            CurrentThread::t_threadName = "crashed";
+            fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+            fprintf(stderr, "reason: %s\n", ex.what());
+            abort();
+        }
+        catch (...) {
+            CurrentThread::t_threadName = "crashed";
+            fprintf(stderr, "unknown exception caught in Thread %s\n", name_.c_str());
+            throw; // rethrow
+        }
     }
 };
 
@@ -75,6 +99,28 @@ void* startThread(void* obj) {
 }
 
 }   // namespace detail
+
+namespace CurrentThread {
+
+void cacheTid() {
+    if(t_cachedTid == 0) {
+        t_cachedTid = detail::gettid();
+        t_tidStringLength = snprintf(t_tidString, sizeof t_tidString, "%5d ", t_cachedTid);
+    }
+}
+
+bool isMainThread() {
+    return tid() == getpid();
+}
+
+void sleepUsec(int64_t usec) {
+    struct timespec ts = { 0, 0 };
+    ts.tv_sec = static_cast<time_t>(usec / Timestamp::kMicroSecondsPerSecond);
+    ts.tv_nsec = static_cast<long>(usec % Timestamp::kMicroSecondsPerSecond * 1000);
+    nanosleep(&ts, NULL);
+}
+
+}   // namespace CurrentThread
 
 /**
  * 构造函数
