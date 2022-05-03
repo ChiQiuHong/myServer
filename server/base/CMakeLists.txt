@@ -1,4 +1,5 @@
 set(base_SRCS
+    Condition.cc
     CurrentThread.cc
     FileUtil.cc
     Logging.cc
