@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "server/base/Mutex.h"
 #include "server/base/Types.h"
-#include "server/base/noncopyable.h"
 
 #include <memory>
 
@@ -44,11 +44,11 @@ private:
 
     int count_; // 记录写入的次数
 
-    // std::unique_ptr<MutexLock> mutex_; // 加锁
-    time_t startOfPeriod_;  // 开始记录日志时间（调整到零时时间）
-    time_t lastRoll_;       // 上一次滚动日志文件时间
-    time_t lastFlush_;      // 上一次日志写入文件时间
-    std::unique_ptr<FileUtil::AppendFile> file_; // 文件智能指针
+    std::unique_ptr<MutexLock> mutex_;              // 互斥锁
+    time_t startOfPeriod_;                          // 开始记录日志时间（调整到零时时间）
+    time_t lastRoll_;                               // 上一次滚动日志文件时间
+    time_t lastFlush_;                              // 上一次日志写入文件时间
+    std::unique_ptr<FileUtil::AppendFile> file_;    // 文件智能指针
 
     const static int kRollPerSeconds_ = 60 * 60 * 24;   // 一天的秒数
 };

@@ -6,8 +6,8 @@
 */
 
 #include "server/base/LogFile.h"
-
 #include "server/base/FileUtil.h"
+#include "server/base/ProcessInfo.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -26,7 +26,7 @@ LogFile::LogFile(const string& basename,
       flushInterval_(flushInterval),
       checkEveryN_(checkEveryN),
       count_(0),
-    //   mutex_(threadSafe ? new MutexLock : NULL), // FIXME 暂不考虑线程安全
+      mutex_(threadSafe ? new MutexLock : NULL),
       startOfPeriod_(0),
       lastRoll_(0),
       lastFlush_(0)
@@ -42,14 +42,27 @@ LogFile::~LogFile() = default;
 
 // 把日志消息写到缓冲区 具体实现是私有函数append_unlocked
 void LogFile::append(const char* logline, int len) {
-    append_unlocked(logline, len);
+    if(mutex_) {
+        MutexLockGuard lock(*mutex_);
+        append_unlocked(logline, len);
+    }
+    else {
+        append_unlocked(logline, len);
+    }
+    
 }
 
 /**
  * 将缓冲区内的日志消息flush到硬盘
  */
 void LogFile::flush() {
-    file_->flush();
+    if(mutex_) {
+        MutexLockGuard lock(*mutex_);
+        file_->flush();
+    }
+    else {
+        file_->flush();
+    }
 }
 
 /**
@@ -128,12 +141,10 @@ string LogFile::getLogFileName(const string& basename, time_t* now) {
     strftime(timebuf, sizeof timebuf, ".%Y%m%d-%H%M%S.", &t_time);
     filename += timebuf;
 
-    // filename += ProcessInfo::hostname(); 
-    filename += "hostname"; // FIXME
+    filename += ProcessInfo::hostname();
 
     char pidbuf[32];
-    // snprintf(pidbuf, sizeof pidbuf, ".%d", ProcessInfo::pid());
-    snprintf(pidbuf, sizeof pidbuf, ".%d", 1234);   // FIXME
+    snprintf(pidbuf, sizeof pidbuf, ".%d", ProcessInfo::pid());
     filename += pidbuf;
 
     filename += ".log";

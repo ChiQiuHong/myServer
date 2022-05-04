@@ -23,7 +23,6 @@ void flushFunc() {
 int main(int argc, char* argv[]) {
     char name[256] = { '\0' };
     strncpy(name, argv[0], sizeof name - 1);
-    printf("%s", argv[0]);
     g_logFile.reset(new myserver::LogFile(basename(name), 200*1000));
     myserver::Logger::setOutput(outputFunc);
     myserver::Logger::setFlush(flushFunc);
