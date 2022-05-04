@@ -6,6 +6,7 @@ set(base_SRCS
     Logging.cc
     LogFile.cc
     LogStream.cc
+    ProcessInfo.cc
     Thread.cc
     Timestamp.cc
     )

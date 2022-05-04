@@ -21,6 +21,9 @@ add_test(NAME logstream_test COMMAND logstream_test)
 add_executable(mutex_test Mutex_test.cc)
 target_link_libraries(mutex_test myserver_base)
 
+add_executable(processinfo_test ProcessInfo_test.cc)
+target_link_libraries(processinfo_test myserver_base)
+
 add_executable(thread_test Thread_test.cc)
 target_link_libraries(thread_test myserver_base)
 
