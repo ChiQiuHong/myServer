@@ -31,13 +31,21 @@ pid_t gettid() {
     return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
+// 如果fork了一个子进程后，在子进程中调用afterFork来进行同样的初始化工作
+void afterFork() {
+    CurrentThread::t_cachedTid = 0;
+    CurrentThread::t_threadName = "main";
+    CurrentThread::tid();
+}
+
 // 线程名称初始化
+// 设置默认的线程name、缓存线程id
 class ThreadNameInitializer {
 public:
     ThreadNameInitializer() {
         CurrentThread::t_threadName = "main";
         CurrentThread::tid();
-        // pthread_arfork(NULL, NULL, &afterfork);
+        pthread_atfork(NULL, NULL, &afterFork);
     }
 };
 
@@ -48,18 +56,20 @@ ThreadNameInitializer init;
  */
 struct ThreadData {
     typedef Thread::ThreadFunc ThreadFunc;
-    ThreadFunc func_;   // 线程执行函数
-    string name_;       // 子线程的名字
-    pid_t* tid_;        // 子线程的tid
-    // CountDownLatch* latch_; // FIXME
+    ThreadFunc func_;       // 线程执行函数
+    string name_;           // 子线程的名字
+    pid_t* tid_;            // 子线程的tid
+    CountDownLatch* latch_; // 线程同步
 
     // 构造函数
     ThreadData(ThreadFunc func,
                const string& name,
-               pid_t* tid)
+               pid_t* tid,
+               CountDownLatch* latch)
         : func_(std::move(func)),
           name_(name),
-          tid_(tid)
+          tid_(tid),
+          latch_(latch)
     { }
 
     // 线程实际执行的函数
@@ -67,6 +77,8 @@ struct ThreadData {
         // 执行用户传入的回调函数
         *tid_ = CurrentThread::tid();
         tid_ = NULL;
+        latch_->countDown();    // 计数减1 代表该线程执行完毕
+        latch_ = NULL;          // 指针置空
 
         CurrentThread::t_threadName = name_.empty() ? "myserverThread" : name_.c_str();
         // 把参数arg2作为调用进程的经常名字
@@ -123,6 +135,8 @@ void sleepUsec(int64_t usec) {
 
 }   // namespace CurrentThread
 
+AtomicInt32 Thread::numCreated_;
+
 /**
  * 构造函数
  * 主要是对数据成员进行初始化 还没创建线程执行入口函数
@@ -133,7 +147,8 @@ Thread::Thread(ThreadFunc func, const string& n)
       pthreadId_(0),
       tid_(0),
       func_(std::move(func)),
-      name_(n)
+      name_(n),
+      latch_(1)
 {   
     // 线程名字默认为空
     setDefalutName();
@@ -154,11 +169,14 @@ Thread::~Thread() {
  */ 
 void Thread::start() {
     started_ = true;
-    detail::ThreadData* data = new detail::ThreadData(func_, name_, &tid_);
+    detail::ThreadData* data = new detail::ThreadData(func_, name_, &tid_, &latch_);
     if(pthread_create(&pthreadId_, NULL, &detail::startThread, data)) {
         started_ = false;
         delete data;
         LOG_SYSFATAL << "Failed in pthread_create";
+    }
+    else {
+        latch_.wait();
     }
 }
 
@@ -170,9 +188,10 @@ int Thread::join() {
 
 // 设置默认线程名称
 void Thread::setDefalutName() {
+    int num = numCreated_.incrementAndGet();
     if(name_.empty()) {
         char buf[32];
-        snprintf(buf, sizeof(buf), "Thread%d", 1);
+        snprintf(buf, sizeof(buf), "Thread%d", num);
         name_ = buf;
     }
 }

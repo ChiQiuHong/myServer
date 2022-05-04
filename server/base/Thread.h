@@ -7,8 +7,9 @@
 
 #pragma once
 
+#include "server/base/Atomic.h"
+#include "server/base/CountDownLatch.h"
 #include "server/base/Types.h"
-#include "server/base/noncopyable.h"
 
 #include <functional>
 #include <memory>
@@ -44,7 +45,7 @@ public:
     // 返回线程名称
     const string& name() const { return name_; }
     // 返回当前已经创建的线程数量
-    // static int numCreated() { return numCreated_.get(); }   // FIXME
+    static int numCreated() { return numCreated_.get(); }
 
 private:
     void setDefalutName();  // 默认线程名称
@@ -55,9 +56,9 @@ private:
     pid_t tid_;             // 线程tid
     ThreadFunc func_;       // 线程执行函数
     string name_;           // 线程名称
-    // CountDownLatch latch_;   // FIXME 用于等待线程函数执行完毕
+    CountDownLatch latch_;  // 线程同步
 
-    // static AtomicInt32 numCreated_; // FIXME 原子操作 当前已经创建线程的数量
+    static AtomicInt32 numCreated_; // 原子操作 当前已经创建线程的数量
 
 };
 
