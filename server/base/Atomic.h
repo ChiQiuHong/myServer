@@ -33,8 +33,8 @@ public:
 
     // 获取
     T get() {
-        // __atomic__load_n 原子加载操作 返回value的内容
-        return __atomic__load_n(&value_, __ATOMIC_SEQ_CST);
+        // __atomic_load_n 原子加载操作 返回value的内容
+        return __atomic_load_n(&value_, __ATOMIC_SEQ_CST);
     }
 
     // 实现先获取值再修改值的操作
