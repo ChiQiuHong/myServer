@@ -27,6 +27,9 @@ target_link_libraries(processinfo_test myserver_base)
 add_executable(thread_test Thread_test.cc)
 target_link_libraries(thread_test myserver_base)
 
+add_executable(threadpool_test ThreadPool_test.cc)
+target_link_libraries(threadpool_test myserver_base)
+
 add_executable(timestamp_unittest Timestamp_unittest.cc)
 target_link_libraries(timestamp_unittest myserver_base)
 add_test(NAME timestamp_unittest COMMAND timestamp_unittest)

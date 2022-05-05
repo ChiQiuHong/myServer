@@ -7,8 +7,8 @@
 
 #include "server/base/Logging.h"
 #include "server/base/LogFile.h"
+#include "server/base/ThreadPool.h"
 
-#include <iostream>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -47,8 +47,23 @@ void bench(const char* type) {
            type, seconds, g_total, n / seconds, g_total / seconds / (1024*1024));
 }
 
+void logInThread() {
+    LOG_INFO << "logInThread";
+    usleep(1000);
+}
+
 int main() {
-    std::cout << "Hello World" << std::endl;
+
+    getppid();
+
+    myserver::ThreadPool pool("pool");
+    pool.start(5);
+    pool.run(logInThread);
+    pool.run(logInThread);
+    pool.run(logInThread);
+    pool.run(logInThread);
+    pool.run(logInThread);
+
     LOG_TRACE << "trace";
     LOG_DEBUG << "debug";
     LOG_INFO << "Hello";
@@ -64,12 +79,20 @@ int main() {
 
     char buffer[64 * 1024];
     
-    g_file = fopen("/home/workspace/myServer/log", "w");
+    g_file = fopen("/dev/null", "w");
     setbuffer(g_file, buffer, sizeof(buffer));
-    bench("/myServer/log");
+    bench("dev/null");
+    fclose(g_file);
+
+    g_file = fopen("/home/workspace/myServer/build/log", "w");
+    setbuffer(g_file, buffer, sizeof(buffer));
+    bench("myServer/build");
     fclose(g_file);
 
     g_file = NULL;
-    g_logFile.reset(new myserver::LogFile("test_log_st", 500*1000*1000));
+    g_logFile.reset(new myserver::LogFile("test_log_st", 500*1000*1000, false));
+    bench("test_log_st");
+
+    g_logFile.reset(new myserver::LogFile("test_log_mt", 500*1000*1000, true));
     bench("test_log_st");
 }
