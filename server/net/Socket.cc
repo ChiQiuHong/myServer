@@ -36,7 +36,7 @@ bool Socket::getTcpInfoString(char* buf, int len) const {
     bool ok = getTcpInfo(&tcpi);
     if(ok) {
         snprintf(buf, len, "unrecovered=%u "
-                 "rto=%u ato=%u snd_mss=%s rcv_mss=%u "
+                 "rto=%u ato=%u snd_mss=%u rcv_mss=%u "
                  "lost=%u retrans=%u rtt=%u rttvar=%u "
                  "sshthresh=%u cwnd=%u total_retrans=%u",
                  tcpi.tcpi_retransmits,     // 重传数 表示当前待重传的包数
