@@ -1,4 +1,5 @@
 set(net_SRCS
+    Channel.cc
     EventLoop.cc
     InetAddress.cc
     Socket.cc
