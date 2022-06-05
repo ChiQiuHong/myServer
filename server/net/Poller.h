@@ -13,6 +13,8 @@
 #include <map>
 #include <vector>
 
+struct epoll_event;
+
 namespace myserver {
 
 namespace net {
@@ -42,6 +44,10 @@ public:
     void updateChannel(Channel* channel);
     // 移除Channel
     void removeChannel(Channel* channel);
+    // 判断是否拥有该文件描述符
+    bool hasChannel(Channel* channel) const;
+    // 返回Poller对象
+    static Poller* newDefaultPoller(EventLoop* loop) { return new Poller(loop); }
 
     // 是否是当前线程的EventLoop调用的Poller
     void assertInLoopThread() const { 
@@ -65,8 +71,8 @@ private:
 
     ChannelMap channels_;   // 存储事件分发器的map
     EventLoop* ownerLoop_;  // 调用方
-    EventList events_;      // 传递给epoll_wait()时 发生变化的文件描述符信息将被填入该数组
     int epollfd_;           // epoll_create()创建成功返回的文件描述符
+    EventList events_;      // 传递给epoll_wait()时 发生变化的文件描述符信息将被填入该数组
 };
 
 }   // namespace net

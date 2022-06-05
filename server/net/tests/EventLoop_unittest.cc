@@ -17,18 +17,29 @@ using namespace myserver::net;
 
 EventLoop* g_loop;
 
+void callback() {
+    printf("callback(): pid = %d, tid = %d\n", getpid(), CurrentThread::tid());
+    EventLoop anotherLoop;
+}
+
 void threadFunc() {
     printf("threadFunc(): pid = %d, tid = %d\n", getpid(), CurrentThread::tid());
+    assert(EventLoop::geteventLoopOfCurrentThread() == NULL);
     EventLoop loop;
+    assert(EventLoop::geteventLoopOfCurrentThread() == &loop);
+    loop.runAfter(1.0, callback);
     loop.loop();
 }
 
 int main() {
     printf("main(): pid = %d, tid = %d\n", getpid(), CurrentThread::tid());
+    assert(EventLoop::geteventLoopOfCurrentThread() == NULL);
     EventLoop loop;
+    assert(EventLoop::geteventLoopOfCurrentThread() == &loop);
+
     Thread thread(threadFunc);
     thread.start();
 
     loop.loop();
-    pthread_exit(NULL);
+    
 }

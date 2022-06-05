@@ -4,7 +4,9 @@ set(net_SRCS
     InetAddress.cc
     Poller.cc
     Socket.cc
-    SocketOps.cc)
+    SocketOps.cc
+    Timer.cc
+    TimerQueue.cc)
 
 add_library(myserver_net ${net_SRCS})
 target_link_libraries(myserver_net myserver_base)

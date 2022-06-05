@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 
@@ -149,6 +150,13 @@ void Poller::removeChannel(Channel* channel) {
     }
     // 把channel设为 -1
     channel->set_index(kNew);
+}
+
+// 判断是否拥有该文件描述符
+bool Poller::hasChannel(Channel* channel) const {
+    assertInLoopThread();
+    ChannelMap::const_iterator it = channels_.find(channel->fd());
+    return it != channels_.end() && it->second == channel;
 }
 
 /**
