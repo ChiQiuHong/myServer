@@ -6,6 +6,7 @@ set(net_SRCS
     Poller.cc
     Socket.cc
     SocketOps.cc
+    TcpConnection.cc
     Timer.cc
     TimerQueue.cc)
 
