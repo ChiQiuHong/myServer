@@ -1,2 +1,5 @@
 add_executable(eventloop_unittest EventLoop_unittest.cc)
 target_link_libraries(eventloop_unittest myserver_net)
+
+add_executable(acceptor_test Acceptor_test.cc)
+target_link_libraries(acceptor_test myserver_net)
