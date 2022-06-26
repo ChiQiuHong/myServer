@@ -4,6 +4,9 @@ target_link_libraries(eventloop_unittest myserver_net)
 add_executable(acceptor_test Acceptor_test.cc)
 target_link_libraries(acceptor_test myserver_net)
 
+add_executable(echoserver_unittest EchoServer_unittest.cc)
+target_link_libraries(echoserver_unittest myserver_net)
+
 if(BOOSTTEST_LIBRARY)
 add_executable(buffer_unittest Buffer_unittest.cc)
 target_link_libraries(buffer_unittest myserver_net boost_unit_test_framework)
